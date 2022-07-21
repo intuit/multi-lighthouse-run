@@ -27,14 +27,6 @@ describe("Validating Url", () => {
   });
 });
 
-describe("cleaningMemory", () => {
-  it("should attempt to clean the memory", () => {
-    cProcess.execSync.mockImplementation(() => true);
-    let result = cleaningMemory();
-    expect(result).toBe(true);
-  });
-});
-
 describe("Validating Parameters", () => {
   it("should validate parameters", () => {
     let result = validatingParameters({ ...mockData });

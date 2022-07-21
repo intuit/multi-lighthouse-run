@@ -1,0 +1,5 @@
+#!/bin/bash
+
+npm install
+cp multipleLighthouseRun.js /usr/local/bin/lh
+cp utilities.js /usr/local/bin/utilities

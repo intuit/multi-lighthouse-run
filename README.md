@@ -30,7 +30,7 @@ As we run lighthouse for any given web url multiple times, its score gets fluctu
 ## Install
 
 ```
-clone the project
+git clone
 cd multi-lighthouse-run
 ./setup
 ```

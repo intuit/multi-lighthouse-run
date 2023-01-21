@@ -1,36 +1,43 @@
 #!/usr/bin/env node
 
 const {
-  runLighthouse,
-  getAllReports,
-  isValidHttpUrl,
-  cleaningMemory,
-  validatingParameters,
-  generatingTable,
-} = require("./utilities");
+  validatingParametersAndFetchURLSourceType,
+  URLSource,
+  handleFileCase,
+  handleURLCase
+} = require("./utilities.js");
 
 const argument = process.argv;
-let url = argument[2] || "https://www.google.co.in";
-let runs = 0;
+let urlSource = argument[2] || "https://www.google.com" ;
 let runLimit = argument[3] || 1;
 let platform = argument[4] || "desktop";
 
 let otherParameters = argument.slice(5, argument.length).join(" ");
 
-validatingParameters({ url, runLimit, platform });
+let urlSourceType = validatingParametersAndFetchURLSourceType({ urlSource, runLimit, platform });
 
-console.log(
-  "\x1b[36m%s\x1b[0m",
-  "Lighthouse will run on " + "\x1b[4m" + "\x1b[1m" + url,
-  "\x1b[36m" + `for\x1b[1m ${runLimit} times\x1b[0m \x1b[36mfor ${platform}`,
-  "\x1b[0m"
-);
-runLighthouse({ url, runLimit, platform, otherParameters });
+const result = {};
 
-const reports = getAllReports(runLimit);
+switch(urlSourceType) {
+  case URLSource.File:
+    handleFileCase({urlSource, runLimit, platform, otherParameters, result})
+    break;
+  case URLSource.URL:
+    handleURLCase({urlSource, runLimit, platform, otherParameters, result})
+    break;
+}
+if(urlSourceType == URLSource.File) {
+  
 
-generatingTable(reports, runLimit);
+} else if(urlSourceType == URLSource.URL) {
+  
+} else {
+  result[urlSource] = {msg : "Invalid URL source"};
+}
 
-cleaningMemory();
+const FileSystem = require("fs");
+ FileSystem.writeFile('./result.json', JSON.stringify(result), (error) => {
+    if (error) throw error;
+  });
 
 console.log("\x1b[32m", `All finished`, "\x1b[0m");

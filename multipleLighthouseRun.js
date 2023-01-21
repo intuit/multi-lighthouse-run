@@ -2,7 +2,7 @@
 
 const {
   validatingParametersAndFetchURLSourceType,
-  URLSource,
+  URLSourceType,
   handleFileCase,
   handleURLCase
 } = require("./utilities.js");
@@ -19,20 +19,12 @@ let urlSourceType = validatingParametersAndFetchURLSourceType({ urlSource, runLi
 const result = {};
 
 switch(urlSourceType) {
-  case URLSource.File:
-    handleFileCase({urlSource, runLimit, platform, otherParameters, result})
+  case URLSourceType.File:
+    handleFileCase({filePath: urlSource, runLimit, platform, otherParameters, result})
     break;
-  case URLSource.URL:
-    handleURLCase({urlSource, runLimit, platform, otherParameters, result})
+  case URLSourceType.URL:
+    handleURLCase({url: urlSource, runLimit, platform, otherParameters, result})
     break;
-}
-if(urlSourceType == URLSource.File) {
-  
-
-} else if(urlSourceType == URLSource.URL) {
-  
-} else {
-  result[urlSource] = {msg : "Invalid URL source"};
 }
 
 const FileSystem = require("fs");

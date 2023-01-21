@@ -56,8 +56,9 @@ function requireUncached(module) {
   return require(module);
 }
 
-function isValidJSONFilePath(file) {
-  return /^\.\/([A-z0-9-_+]+\/)*([A-z0-9]+\.(json))$/.test(file);
+function isValidJSONFilePath (filePath) {
+  var regexJsonFile = new RegExp(".json$", "i");
+  return regexJsonFile.test(filePath);
 }
 
 function cleaningMemory(filePath) {
@@ -85,35 +86,39 @@ function validatingParametersAndFetchURLSourceType({ urlSource, runLimit, platfo
     if (!isValidHttpUrl(urlSource)) {
       throw Error("Enter a valid URL or valid JSON file path")
     } else {
-      return URLSource.URL;
+      return URLSourceType.URL;
     }
   } else {
-    return URLSource.File;
+    return URLSourceType.File;
   }
 }
 
-function handleFileCase({urlSource, runLimit, platform, otherParameters, result}) {
-  const data = require(urlSource);
-    console.log("Running multilighthouse on ", data);
+function handleFileCase({filePath, runLimit, platform, otherParameters, result}) {
+  const data = require(filePath);
 
-    for(let i = 0; i < data.urls.length; i++) {
-      let url = data.urls[i];
-      if(!isValidHttpUrl(url)) {
-        result[url] = {msg : "Invalid URL"};
-      } else {
-        runLighthouse({ url, runLimit, platform, otherParameters});
-        const reports = getAllReports(runLimit);
-        result[url] = generatingTable(reports, runLimit);
-      }
+  for(let i = 0; i < data.urls.length; i++) {
+    let url = data.urls[i];
+    if(!isValidHttpUrl(url)) {
+      result[url] = {msg : "Invalid URL"};
+    } else {
+      runLighthouse({ url, runLimit, platform, otherParameters});
+      const reports = getAllReports(runLimit);
+      result[url] = generatingTable(reports, runLimit);
     }
+  }
 }
 
-function handleURLCase({urlSource, runLimit, platform, otherParameters, result}) {
-  console.log("Running multilighthouse on ", urlSource);
+function handleURLCase({url, runLimit, platform, otherParameters, result}) {
+  console.log(
+    "\x1b[36m%s\x1b[0m",
+    "Lighthouse will run on " + "\x1b[4m" + "\x1b[1m" + url,
+    "\x1b[36m" + `for\x1b[1m ${runLimit} times\x1b[0m \x1b[36mfor ${platform}`,
+    "\x1b[0m"
+  );
 
-    runLighthouse({ url: urlSource, runLimit, platform, otherParameters });
+    runLighthouse({ url, runLimit, platform, otherParameters });
     const reports = getAllReports(runLimit);
-    result[urlSource] = generatingTable(reports, runLimit);
+    result[url] = generatingTable(reports, runLimit);
 }
 
 function generatingTable(reports, runLimit) {
@@ -194,7 +199,7 @@ function generatingTable(reports, runLimit) {
 
 }
 
-const URLSource = {
+const URLSourceType = {
 	URL: "url",
 	File: "file"
 }
@@ -206,7 +211,7 @@ module.exports = {
   cleaningMemory,
   validatingParametersAndFetchURLSourceType,
   generatingTable,
-  URLSource,
+  URLSourceType,
   handleFileCase,
   handleURLCase
 };

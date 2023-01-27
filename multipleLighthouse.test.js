@@ -2,15 +2,15 @@
 const cProcess = require("child_process");
 
 const mockData = {
-  url: "https://intuit.com",
+  urlSource: "https://intuit.com",
   runLimit: 5,
   platform: "desktop",
 };
 
 const {
   isValidHttpUrl,
-  cleaningMemory,
-  validatingParameters,
+  validatingParametersAndFetchURLSourceType,
+  URLSource,
 } = require("./utilities");
 
 jest.spyOn(cProcess, "execSync");
@@ -29,7 +29,7 @@ describe("Validating Url", () => {
 
 describe("Validating Parameters", () => {
   it("should validate parameters", () => {
-    let result = validatingParameters({ ...mockData });
-    expect(result).toBe(true);
+    let result = validatingParametersAndFetchURLSourceType({ ...mockData });
+    expect(result).toBe(URLSource.URL);
   });
 });

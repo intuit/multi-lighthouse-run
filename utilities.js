@@ -3,6 +3,7 @@ const execSync = require("child_process").execSync;
 
 function runLighthouse({ url, runLimit, platform, otherParameters }) {
   let runs = 0;
+  console.log(`Running performance tests for ${url}`)
   do {
     console.log(`Running performance test ${runs + 1}`);
     try {
@@ -30,7 +31,9 @@ function runLighthouse({ url, runLimit, platform, otherParameters }) {
 function getAllReports(runLimit) {
   const reports = [];
   for (let i = 0; i < runLimit; i++) {
-    let report = require(`/tmp/report_${i + 1}.json`);
+    let filePath = `/tmp/report_${i + 1}.json`;
+    let report = requireUncached(filePath);
+    cleaningMemory(filePath)
     reports.push(report);
   }
   return reports;
@@ -48,22 +51,29 @@ function isValidHttpUrl(string) {
   return url.protocol === "http:" || url.protocol === "https:";
 }
 
-function cleaningMemory() {
+function requireUncached(module) {
+  delete require.cache[require.resolve(module)];
+  return require(module);
+}
+
+function isValidJSONFilePath (filePath) {
+  var regexJsonFile = new RegExp(".json$", "i");
+  return regexJsonFile.test(filePath);
+}
+
+function cleaningMemory(filePath) {
   try {
-    execSync(`rm /tmp/report_*.json`);
+    execSync(`rm ${filePath}`);
     return true;
   } catch (e) {
-    console.log("\x1b[31m", "error deleting files", "\x1b[0m", e);
+    console.log("\x1b[31m", "error deleting file ${filePath}", "\x1b[0m", e);
     return false;
   }
 }
 
-function validatingParameters({ url, runLimit, platform }) {
+function validatingParametersAndFetchURLSourceType({ urlSource, runLimit, platform }) {
   let isValidPlatform =
     platform.toLowerCase() === "desktop" || platform.toLowerCase() === "mobile";
-  if (!isValidHttpUrl(url)) {
-    throw Error("Enter a valid URL");
-  }
 
   if (runLimit < 1) {
     throw Error("Enter value greater than 1");
@@ -72,7 +82,43 @@ function validatingParameters({ url, runLimit, platform }) {
   if (!isValidPlatform) {
     throw Error("Enter either desktop or mobile");
   }
-  return true;
+  if (!isValidJSONFilePath(urlSource)) {
+    if (!isValidHttpUrl(urlSource)) {
+      throw Error("Enter a valid URL or valid JSON file path")
+    } else {
+      return URLSourceType.URL;
+    }
+  } else {
+    return URLSourceType.File;
+  }
+}
+
+function handleFileCase({filePath, runLimit, platform, otherParameters, result}) {
+  const data = require(filePath);
+
+  for(let i = 0; i < data.urls.length; i++) {
+    let url = data.urls[i];
+    if(!isValidHttpUrl(url)) {
+      result[url] = {msg : "Invalid URL"};
+    } else {
+      runLighthouse({ url, runLimit, platform, otherParameters});
+      const reports = getAllReports(runLimit);
+      result[url] = generatingTable(reports, runLimit);
+    }
+  }
+}
+
+function handleURLCase({url, runLimit, platform, otherParameters, result}) {
+  console.log(
+    "\x1b[36m%s\x1b[0m",
+    "Lighthouse will run on " + "\x1b[4m" + "\x1b[1m" + url,
+    "\x1b[36m" + `for\x1b[1m ${runLimit} times\x1b[0m \x1b[36mfor ${platform}`,
+    "\x1b[0m"
+  );
+
+    runLighthouse({ url, runLimit, platform, otherParameters });
+    const reports = getAllReports(runLimit);
+    result[url] = generatingTable(reports, runLimit);
 }
 
 function generatingTable(reports, runLimit) {
@@ -122,36 +168,40 @@ function generatingTable(reports, runLimit) {
     p50th: performanceScores[Math.floor(performanceScores.length * 0.5)],
     p90th: performanceScores[Math.floor(performanceScores.length * 0.9)],
   };
-  const avgScore = {};
-  avgScore.Performance = Number(
+  const score = {};
+  score.Performance = Number(
     (totalScores.Performance / runLimit).toFixed(2)
   );
-  avgScore.Accessibility = Number(
+  score.Accessibility = Number(
     (totalScores.Accessibility / runLimit).toFixed(2)
   );
-  avgScore["Best Practices"] = Number(
+  score["Best Practices"] = Number(
     (totalScores["Best Practices"] / runLimit).toFixed(2)
   );
-  avgScore.Seo = Number((totalScores.Seo / runLimit).toFixed(2));
-  avgScore.PWA = Number((totalScores.PWA / runLimit).toFixed(2));
+  score.Seo = Number((totalScores.Seo / runLimit).toFixed(2));
+  score.PWA = Number((totalScores.PWA / runLimit).toFixed(2));
 
-  const avgMetrics = {};
-  avgMetrics.FCP = Number((totalMetrics.FCP / runLimit).toFixed(2));
-  avgMetrics.LCP = Number((totalMetrics.LCP / runLimit).toFixed(2));
-  avgMetrics["Speed Index"] = Number(
+  const metrics = {};
+  metrics.FCP = Number((totalMetrics.FCP / runLimit).toFixed(2));
+  metrics.LCP = Number((totalMetrics.LCP / runLimit).toFixed(2));
+  metrics["Speed Index"] = Number(
     (totalMetrics["Speed Index"] / runLimit).toFixed(2)
   );
-  avgMetrics.TTI = Number((totalMetrics.TTI / runLimit).toFixed(2));
-  avgMetrics.TBT = Number((totalMetrics.TBT / runLimit).toFixed(2));
-  avgMetrics.CLS = Number((totalMetrics.CLS / runLimit).toFixed(2));
+  metrics.TTI = Number((totalMetrics.TTI / runLimit).toFixed(2));
+  metrics.TBT = Number((totalMetrics.TBT / runLimit).toFixed(2));
+  metrics.CLS = Number((totalMetrics.CLS / runLimit).toFixed(2));
 
   console.log(
     "************************** Generated Report *****************************"
   );
 
-  console.table({ Scores: avgScore });
-  console.table({ Metrics: avgMetrics });
-  console.table({ Percentiles: percentile });
+  return {score, metrics, percentile};
+
+}
+
+const URLSourceType = {
+	URL: "url",
+	File: "file"
 }
 
 module.exports = {
@@ -159,6 +209,9 @@ module.exports = {
   getAllReports,
   isValidHttpUrl,
   cleaningMemory,
-  validatingParameters,
+  validatingParametersAndFetchURLSourceType,
   generatingTable,
+  URLSourceType,
+  handleFileCase,
+  handleURLCase
 };

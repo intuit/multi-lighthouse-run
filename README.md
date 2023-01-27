@@ -37,13 +37,13 @@ cd multi-lighthouse-run
 
 ## Usage
 
-`lh <url> <runlimit> <platform> <options>`
+`lh <url/json-file-path> <runlimit> <platform> <options>`
 
 platform can be mobile or desktop
 
 options are optional
 
-Example: `lh <Any-Valid-URL> 5 desktop`
+Example: `lh <Any-Valid-URL/Local-JSON-File-Path> 5 desktop`
 
 ## Compatibility
 

@@ -8,9 +8,12 @@ const {
 } = require("./utilities.js");
 
 const argument = process.argv;
-let urlSource = argument[2] || "https://www.google.com" ;
+const defaultURL = "https://www.google.com";
+const defaultPlatform = "desktop";
+
+let urlSource = argument[2] || defaultURL ;
 let runLimit = argument[3] || 1;
-let platform = argument[4] || "desktop";
+let platform = argument[4] || defaultPlatform;
 
 let otherParameters = argument.slice(5, argument.length).join(" ");
 
